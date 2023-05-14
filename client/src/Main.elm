@@ -1,8 +1,14 @@
 module Main exposing (..)
 
+-- import Html exposing (..)
+
 import Browser
 import Browser.Navigation
-import Html exposing (..)
+import Element exposing (..)
+import Element.Background as Background
+import Element.Border as Border
+import Element.Font as Font
+import Element.Input as Input
 import Http
 import Url
 
@@ -21,10 +27,13 @@ main =
 type Msg
     = NoOp
     | GotString (Result Http.Error String)
+    | TypedRoomCode String
 
 
 type alias Model =
     { text : String
+    , key : Browser.Navigation.Key
+    , roomCode : String
     }
 
 
@@ -33,8 +42,11 @@ type alias Model =
 
 
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
-init _ _ _ =
-    ( { text = "" }
+init _ _ key =
+    ( { text = ""
+      , key = key
+      , roomCode = ""
+      }
     , Http.get
         { url = "http://localhost:8080/user"
         , expect = Http.expectString GotString
@@ -52,7 +64,17 @@ update msg model =
         GotString (Ok s) ->
             ( { model | text = s }, Cmd.none )
 
-        _ ->
+        TypedRoomCode s ->
+            if String.length s < 4 then
+                ( { model | roomCode = String.toUpper s }, Cmd.none )
+
+            else if String.length s == 4 then
+                ( { model | roomCode = String.toUpper s }, Cmd.none )
+
+            else
+                update NoOp model
+
+        x ->
             ( model, Cmd.none )
 
 
@@ -63,11 +85,20 @@ update msg model =
 view : Model -> Browser.Document Msg
 view model =
     { title = "Test App"
-    , body =
-        [ h1 [] [ text "we are live!" ]
-        , text model.text
-        ]
+    , body = [ layout [] (viewBody model) ]
     }
+
+
+viewBody model =
+    column [ centerX, spacing 50 ]
+        [ paragraph [ Font.size 50 ] [ text "⚔️code battle⚔️" ]
+        , Input.text []
+            { onChange = TypedRoomCode
+            , placeholder = Nothing
+            , text = model.roomCode
+            , label = Input.labelAbove [] (text "Room Code")
+            }
+        ]
 
 
 
