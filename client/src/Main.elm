@@ -33,10 +33,25 @@ type Msg
 
 
 type alias Model =
-    { roomCode : String
+    { state : State
+    , roomCode : String
     , username : String
     , formError : String
     }
+
+
+type State
+    = Join
+    | Play
+
+
+
+-- type Model
+--     = Join JoinModel
+--     | Play PlayModel
+-- type alias Playmodel =
+--     { username : String
+--     }
 
 
 apiUrl : String
@@ -50,7 +65,8 @@ apiUrl =
 
 init : () -> Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
 init _ _ _ =
-    ( { roomCode = ""
+    ( { state = Join
+      , roomCode = ""
       , username = ""
       , formError = ""
       }
@@ -101,7 +117,7 @@ update msg model =
                     ( { model | formError = "I couldn't find a room with the code " ++ model.roomCode }, Cmd.none )
 
                 Ok () ->
-                    ( model, Cmd.none )
+                    ( { model | state = Play }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -122,11 +138,30 @@ formIsValid model =
 view : Model -> Browser.Document Msg
 view model =
     { title = "Test App"
-    , body = [ layout [ padding 25 ] (viewBody model) ]
+    , body =
+        [ layout [ padding 25 ]
+            (case model.state of
+                Join ->
+                    viewJoinBody model
+
+                Play ->
+                    viewPlayBody model
+            )
+        ]
     }
 
 
-viewBody model =
+viewPlayBody model =
+    column
+        [ centerX
+        , spacing 40
+        , onEnter JoinRoom
+        ]
+        [ paragraph [ Font.size 50 ] [ text "⚔️Code Battle⚔️" ]
+        ]
+
+
+viewJoinBody model =
     column
         [ centerX
         , spacing 40
