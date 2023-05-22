@@ -8,43 +8,46 @@ import Servant
 import System.IO
 import System.Environment (lookupEnv)
 import Data.Maybe (fromMaybe, fromJust)
+import qualified Data.Map.Strict as Map
 
 -- Local dev
 import Network.Wai.Middleware.Cors
 
 
+-- type UserApi =
+--   "user" :> Get '[JSON] [User] :<|>
+--   "user" :> Capture "name" String :> Get '[JSON] User
 
-type UserApi =
-  "user" :> Get '[JSON] [User] :<|>
-  "user" :> Capture "name" String :> Get '[JSON] User
+data Room = Room String deriving (Eq, Show, Generic)
 
-userApi :: Proxy UserApi
+instance ToJSON Room
+instance FromJSON Room
+
+type Api =
+  Capture "username" String :> Capture "code" String :> Post '[JSON] Room
+
+
+userApi :: Proxy Api
 userApi = Proxy
 
 main :: IO ()
 main = do
-  port <- fromMaybe "8080" <$> lookupEnv "PORT"
+  let port = "8080"
   putStrLn $ "running on port " ++ port
   run (read port) app
 
 app :: Application
 app = simpleCors (serve userApi server)
 
-server :: Server UserApi
+server :: Server Api
 server =
-  getUsers :<|>
-  getUserByName 
+  joinRoom
 
-getUsers :: Handler [User]
-getUsers = return [User "Isaac" 20, User "Ashley" 21, User "Gob" 8]
+joinRoom :: String -> String -> Handler Room
+joinRoom username roomcode = 
+  maybe (throwError err404) pure (Map.lookup roomcode rooms)
 
-getUserByName :: String -> Handler User
-getUserByName s = case s of
-  "Isaac" -> return $ User "Isaac" 20
-  "Ashley" -> return $ User "Ashley" 21
-  _ -> throwError err404
 
-data User = User { name :: String, age :: Int } deriving (Eq, Show, Generic)
+rooms :: Map.Map String Room
+rooms = Map.fromList [("ASDF", Room "hi")]
 
-instance ToJSON User
-instance FromJSON User

@@ -13,5 +13,6 @@ executable codebattle
         , warp
         , wai
         , wai-cors
+        , containers
     hs-source-dirs:   app
     default-language: Haskell2010
